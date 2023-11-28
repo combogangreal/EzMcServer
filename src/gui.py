@@ -4,96 +4,73 @@ Copyright (c) 2023 Combo Gang. All rights reserved.
 This work is licensed under the terms of the MIT license.  
 For a copy, see <https://opensource.org/licenses/MIT>.
 """
-import ttkbootstrap as ttk
 import os
-import shutil
-def replace_whitespace_with_hyphen(text):
-    new_text = ""
-    for char in text:
-        if char.isspace():
-            new_text += "-"
-        else:
-            new_text += char
-    return new_text
+import ttkbootstrap as ttk
+from src.utils import get_craftbukkit_versions
+from src.server import start_server, stop_server, open_folder, create_server
 
-def createServer():
-    print("Creating server...")
-    if not os.path.exists(f"{directory.get()}"):
-        os.mkdir(f"{directory.get()}")
-    with open(f"{directory.get()}/start.bat", "w+") as f:
-        f.write(f"java -Xmx{xmxvar.get()}m -Xms{xmsvar.get()}m -jar {directory.get()}/{variable.get()}")
-    shutil.copy(f"./src/jars/{variable.get()}", f"{directory.get()}/{variable.get()}")
-    os.system(f"cd {directory.get()}")
-    os.system(f"{directory.get()}/start.bat")
-    shutil.move("./eula.txt", f"{directory.get()}/eula.txt")
-    shutil.move("./server.properties", f"{directory.get()}/server.properties")
-    os.mkdir(f"{directory.get()}/logs")
-    shutil.move("./logs/latest.log", f"{directory.get()}/logs/latest.log")
-    with open(f"{directory.get()}/eula.txt") as f:
-        for lines in f.readlines():
-            if lines.startswith("eula=false"):
-                lines = lines.replace("eula=false", "eula=true")
-                with open(f"{directory.get()}/eula.txt", "w") as f:
-                    f.write(lines)
-    serverreadyvar.set("Server Ready For Usage!")
-    print("Server ready, just run ./start.bat")
+username = os.getenv("USERNAME")
+main_path = f"C:/Users/{username}/Desktop/Minecraft Servers"
+
+def _create_server():
+    create_server(versionvar.get(), f"{main_path}/{servername.get()}", servername.get(), xmxvar.get(), xmsvar.get())
+
+def list_servers():
+    for server in os.listdir(main_path):
+        # Adds the server in a gui and adds a start, stop, open folder buttons
+        # to the gui.
+        server_path = f"{main_path}/{server}"
+        server_name = server.replace("_", " ")
+        server_name = server_name.title()
+        server_name = server_name.replace(" ", "")
+        button = ttk.Button(master, text="Start Server", command=lambda: start_server(server_path))
+        button.pack(pady=10)
+        button = ttk.Button(master, text="Stop Server", command=lambda: stop_server(server_path))
+        button.pack(pady=10)
+        button = ttk.Button(master, text="Open Folder", command=lambda: open_folder(server_path))
+        button.pack(pady=10)
     
+    if not os.listdir(main_path):
+        label = ttk.Label(master, text="No servers found.")
+        label.pack(pady=10)
 
-window = ttk.Window(themename="superhero", title="Minecraft Server Installer")
-window.geometry("1000x1000")
+master = ttk.Window(title="Ez Minecraft Server")
+master.geometry("400x300")
+master.resizable(True, True)
 
-window.columnconfigure(0, weight = 1)
-window.columnconfigure(1, weight = 1)
-window.columnconfigure(2, weight = 2)
-window.rowconfigure(0, weight = 1)
-window.rowconfigure(1, weight = 1)
+title = ttk.Label(master, text="Ez Minecraft Server", font="Arial 18 bold")
+title.pack(pady=10)
 
-frame = ttk.Frame(master=window).pack()
-labelPryProt = ttk.Label(frame, text='Minecraft Server Installer', font='Helvetica 18 bold')
-labelPryProt.pack()
+serverversionlabel = ttk.Label(master, text="Server Version")
+serverversionlabel.pack(pady=10)
 
-files = filter(lambda x: x.endswith('.jar'), os.listdir('./src/jars'))
+versionvar = ttk.StringVar(master)
+versiondropdown = ttk.OptionMenu(master, versionvar, "1.20.1", *get_craftbukkit_versions())
+versiondropdown.pack(pady=10)
 
-variable = ttk.StringVar(window)
-variable.set("spigot-1.20.2.jar")
+servernamelabel = ttk.Label(master, text="Server Name")
+servernamelabel.pack(pady=10)
 
-w = ttk.OptionMenu(window, variable, *files)
-w.pack()
+servername = ttk.StringVar(master)
+servernameentry = ttk.Entry(master, textvariable=servername)
+servernameentry.pack(pady=10)
 
-servernamevar = ttk.StringVar(window)
-servernamevar.set("My Server")
-servernamevar.set(f"{replace_whitespace_with_hyphen(servernamevar.get())}")
-L1 = ttk.Label(window, text="Server Name")
-L1.pack()
-E1 = ttk.Entry(window, textvariable=servernamevar)
-E1.pack()
+xmxvar = ttk.IntVar(master)
+xmxvar.set(4096)
+xmxlabel = ttk.Label(master, text="Xmx (MB) (Maximum Memory)", textvariable=xmxvar)
+xmxlabel.pack(pady=10)
 
-xmxvar = ttk.StringVar(window)
-xmxvar.set("4096")
-L2 = ttk.Label(window, text="XMX Amount (Maxium Heap Memory) (In MegaBytes)")
-L2.pack()
-E2 = ttk.Entry(window, textvariable=xmxvar)
-E2.pack()
+xmsvar = ttk.IntVar(master)
+xmsvar.set(1024)
+xmslabel = ttk.Label(master, text="Xms (MB) (Initial Memory)", textvariable=xmsvar)
 
-xmsvar = ttk.StringVar(window)
-xmsvar.set("2048")
-L3 = ttk.Label(window, text="XMS Amount (Inital Heap Memory)")
-L3.pack()
-E3 = ttk.Entry(window, textvariable=xmxvar)
-E3.pack()
+runonready = ttk.BooleanVar(master)
+runonready.set(False)
+runonreadylabel = ttk.Checkbutton(master, text="Run on Ready", variable=runonready)
+runonreadylabel.pack(pady=10)
 
-directory = ttk.StringVar(window)
-username = os.getenv('USERNAME')
-directory.set(f"C:/Users/{username}/Desktop/{servernamevar.get()}")
-L4 = ttk.Label(window, text="Server Directory (Where server files are located)")
-L4.pack()
-E4 = ttk.Entry(window, textvariable=directory)
-E4.pack()
+servercreatebutton = ttk.Button(master, text="Create Server", command=_create_server)
+servercreatebutton.pack(pady=10)
 
-serverreadyvar = ttk.StringVar(window)
-serverreadyvar.set("Server Not Ready")
-serverreadylabel = ttk.Label(window, textvariable=serverreadyvar)
-serverreadylabel.pack()
-
-button = ttk.Button(master=frame, text="Create Server", command=createServer)
-button.pack()
+serverlistbutton = ttk.Button(master, text="Server List", command=list_servers)
+serverlistbutton.pack(pady=10)
